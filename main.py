@@ -10,6 +10,10 @@ from api.indexes import create_indexes
 from api.v1.middlewares.errors import (
     general_exception_handler,
     http_exception_handler,
+    magic_connection_error_handler,
+    magic_did_token_error_handler,
+    magic_generic_error_handler,
+    magic_request_error_handler,
     mongodb_bulk_write_error_handler,
     mongodb_configuration_error_handler,
     mongodb_connection_error_handler,
@@ -29,6 +33,15 @@ from api.v1.middlewares.errors import (
 from api.v1.routes import v1_router
 from api.v1.utils.config import config
 from api.v1.utils.logger import setup_logger
+from magic_admin.error import (
+    APIConnectionError as MagicAPIConnectionError,
+    DIDTokenExpired,
+    DIDTokenInvalid,
+    DIDTokenMalformed,
+    ExpectedBearerStringError,
+    MagicError,
+    RequestError as MagicRequestError,
+)
 from pymongo.errors import (
     BulkWriteError,
     ConfigurationError,
@@ -96,6 +109,13 @@ app.add_exception_handler(InvalidOperation, mongodb_invalid_operation_handler)
 app.add_exception_handler(ConfigurationError, mongodb_configuration_error_handler)
 app.add_exception_handler(OperationFailure, mongodb_operation_failure_handler)
 app.add_exception_handler(PyMongoError, mongodb_generic_error_handler)
+app.add_exception_handler(DIDTokenExpired, magic_did_token_error_handler)
+app.add_exception_handler(DIDTokenInvalid, magic_did_token_error_handler)
+app.add_exception_handler(DIDTokenMalformed, magic_did_token_error_handler)
+app.add_exception_handler(ExpectedBearerStringError, magic_did_token_error_handler)
+app.add_exception_handler(MagicRequestError, magic_request_error_handler)
+app.add_exception_handler(MagicAPIConnectionError, magic_connection_error_handler)
+app.add_exception_handler(MagicError, magic_generic_error_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
 app.include_router(v1_router)

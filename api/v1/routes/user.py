@@ -1,13 +1,8 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query
 
 from api.response import success_response
 from api.v1.dependencies.auth import get_current_user_id
-from api.v1.schemas.user import (
-    CreateUserRequest,
-    HandleAvailabilityResponse,
-    UpdateProfileRequest,
-    UserResponse,
-)
+from api.v1.schemas.user import HandleAvailabilityResponse, UpdateProfileRequest, UserResponse
 from api.v1.services.user import user_service
 
 router = APIRouter(tags=["Users"])
@@ -21,21 +16,6 @@ async def check_handle_availability(handle: str):
         data=HandleAvailabilityResponse(
             handle=handle.lower(), available=available
         ).model_dump(),
-    )
-
-
-@router.post("/users", status_code=status.HTTP_201_CREATED)
-async def create_user(payload: CreateUserRequest):
-    user = await user_service.create_user(
-        handle=payload.handle,
-        display_name=payload.display_name,
-        email=payload.email,
-        login_provider=payload.login_provider,
-    )
-    return success_response(
-        "User created",
-        status_code=status.HTTP_201_CREATED,
-        data=UserResponse(**user.model_dump()).model_dump(),
     )
 
 

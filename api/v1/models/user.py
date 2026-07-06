@@ -13,11 +13,12 @@ class Wallet(BaseModel):
 
 
 class User(MongoModel):
-    handle: str
+    handle: Optional[str] = None
     display_name: str
     avatar_url: Optional[str] = None
     email: Optional[EmailStr] = None
     login_provider: Optional[str] = None
+    magic_issuer: Optional[str] = None
     wallets: list[Wallet] = Field(default_factory=list)
     preferences: dict = Field(default_factory=dict)
     notification_settings: dict = Field(default_factory=dict)

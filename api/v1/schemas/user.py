@@ -5,13 +5,6 @@ from pydantic import BaseModel, EmailStr, Field
 from api.v1.models.user import Wallet
 
 
-class CreateUserRequest(BaseModel):
-    handle: str
-    display_name: str
-    email: Optional[EmailStr] = None
-    login_provider: Optional[str] = None
-
-
 class UpdateProfileRequest(BaseModel):
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -28,7 +21,7 @@ class HandleAvailabilityResponse(BaseModel):
 
 class UserResponse(BaseModel):
     id: str
-    handle: str
+    handle: Optional[str] = None
     display_name: str
     avatar_url: Optional[str] = None
     email: Optional[EmailStr] = None

@@ -14,6 +14,14 @@ class Config(BaseSettings):
     MONGO_MIN_POOL_SIZE: int = 1  # connections kept alive when idle
     MONGO_SERVER_SELECTION_TIMEOUT_MS: int = 5000  # fail fast on bad URI / host
 
+    MAGIC_SECRET_KEY: Optional[str] = None
+    MAGIC_CLIENT_ID: Optional[str] = None
+
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=True, env_file_encoding="utf-8"
     )

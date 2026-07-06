@@ -19,6 +19,8 @@ from pymongo.errors import (
     WTimeoutError,
 )
 
+from magic_admin.error import APIConnectionError, MagicError, RequestError
+
 from api.v1.utils.logger import get_logger
 
 logger = get_logger("exception_handler")
@@ -515,6 +517,89 @@ async def mongodb_generic_error_handler(
     return _error_response(
         status.HTTP_500_INTERNAL_SERVER_ERROR,
         "An unexpected database error occurred. Please try again later.",
+    )
+
+
+async def magic_did_token_error_handler(request: Request, exc: MagicError) -> JSONResponse:
+    """
+    Handle invalid, malformed, or expired Magic (magic.link) DID tokens.
+
+    Covers ``DIDTokenExpired``, ``DIDTokenInvalid``, ``DIDTokenMalformed``, and
+    ``ExpectedBearerStringError`` raised by the ``magic-admin`` SDK while validating
+    the client's login token.
+
+    Returns HTTP 401 Unauthorized.
+    """
+    logger.warning(
+        "Magic DID token error",
+        extra={
+            **_request_meta(request),
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+        },
+    )
+    return _error_response(status.HTTP_401_UNAUTHORIZED, "Invalid or expired login token")
+
+
+async def magic_request_error_handler(request: Request, exc: RequestError) -> JSONResponse:
+    """
+    Handle errors returned by the Magic (magic.link) API itself.
+
+    ``RequestError`` and its subclasses (``RateLimitingError``, ``BadRequestError``,
+    ``AuthenticationError``, ``ForbiddenError``, ``APIError``) indicate Magic rejected
+    the request — usually a misconfigured secret key or client id.
+
+    Returns HTTP 502 Bad Gateway.
+    """
+    logger.error(
+        "Magic API request error",
+        extra={
+            **_request_meta(request),
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+        },
+    )
+    return _error_response(status.HTTP_502_BAD_GATEWAY, "Login provider rejected the request")
+
+
+async def magic_connection_error_handler(
+    request: Request, exc: APIConnectionError
+) -> JSONResponse:
+    """
+    Handle connectivity failures reaching the Magic (magic.link) API.
+
+    Returns HTTP 503 Service Unavailable.
+    """
+    logger.error(
+        "Magic API connection error",
+        extra={**_request_meta(request), "error_message": str(exc)},
+    )
+    return _error_response(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "Login provider unavailable. Please try again later.",
+    )
+
+
+async def magic_generic_error_handler(request: Request, exc: MagicError) -> JSONResponse:
+    """
+    Catch-all handler for any remaining ``MagicError`` subclass not handled above.
+
+    Should be registered after the more specific Magic handlers and before the
+    final generic ``Exception`` handler in ``main.py``.
+
+    Returns HTTP 500 Internal Server Error.
+    """
+    logger.error(
+        "Unhandled Magic SDK error",
+        extra={
+            **_request_meta(request),
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+        },
+        exc_info=True,
+    )
+    return _error_response(
+        status.HTTP_500_INTERNAL_SERVER_ERROR, "An unexpected login error occurred."
     )
 
 
