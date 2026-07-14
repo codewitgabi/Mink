@@ -26,6 +26,7 @@ class UserResponse(BaseModel):
     avatar_url: Optional[str] = None
     email: Optional[EmailStr] = None
     login_provider: Optional[str] = None
+    onboarding_completed: bool = False
     wallets: list[Wallet] = Field(default_factory=list)
     preferences: dict = Field(default_factory=dict)
     notification_settings: dict = Field(default_factory=dict)

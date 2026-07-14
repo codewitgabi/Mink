@@ -88,6 +88,21 @@ class UserService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
         return User(**result)
 
+    async def complete_onboarding(self, user_id: str) -> User:
+        result = await self._collection.find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            {
+                "$set": {
+                    "onboarding_completed": True,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+        if result is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+        return User(**result)
+
     async def search_users(self, query: str, limit: int = 20) -> list[User]:
         cursor = self._collection.find({"$text": {"$search": query}}).limit(limit)
         return [User(**doc) async for doc in cursor]

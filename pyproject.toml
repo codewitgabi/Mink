@@ -17,3 +17,15 @@ dependencies = [
     "typing-extensions>=4.16.0",
     "uvicorn>=0.50.1",
 ]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mongomock-motor>=0.0.36",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]

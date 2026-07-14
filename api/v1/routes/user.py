@@ -39,6 +39,14 @@ async def update_my_profile(
     )
 
 
+@router.post("/users/me/onboarding/complete")
+async def complete_onboarding(user_id: str = Depends(get_current_user_id)):
+    user = await user_service.complete_onboarding(user_id)
+    return success_response(
+        "Onboarding completed", data=UserResponse(**user.model_dump()).model_dump()
+    )
+
+
 @router.get("/users/search")
 async def search_users(
     q: str = Query(..., min_length=1), limit: int = Query(20, le=50)
