@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Mink Auth Test</title>
+<script src="https://cdn.jsdelivr.net/npm/magic-sdk/dist/magic.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+  label { display: block; margin-top: 16px; font-weight: 600; }
+  input { width: 100%; padding: 8px; font-size: 14px; box-sizing: border-box; }
+  button { margin-top: 12px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
+  pre { background: #111; color: #0f0; padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .row { display: flex; gap: 8px; }
+  .row button { flex: 1; }
+</style>
+</head>
+<body>
+  <h1>Mink Auth Test</h1>
+  <p>Manual test harness for the Magic (magic.link) login flow. Not part of the app —
+     dev tool only.</p>
+
+  <label>Magic publishable key (pk_live_... / pk_test_...)</label>
+  <input id="pubKey" placeholder="pk_test_..." />
+
+  <label>Backend base URL</label>
+  <input id="baseUrl" value="http://localhost:5001/api/v1" />
+
+  <label>Email</label>
+  <input id="email" type="email" placeholder="you@example.com" />
+
+  <button id="loginBtn">1. Send magic link &amp; log in</button>
+
+  <h3>Magic DID token</h3>
+  <pre id="didToken">(none yet)</pre>
+
+  <h3>Backend /auth/login response</h3>
+  <pre id="loginResp">(none yet)</pre>
+
+  <div class="row">
+    <button id="meBtn">2. GET /users/me</button>
+    <button id="refreshBtn">3. POST /auth/refresh</button>
+    <button id="logoutBtn">4. POST /auth/logout</button>
+  </div>
+
+  <h3>Latest response</h3>
+  <pre id="output">(none yet)</pre>
+
+  <script>
+    let magic;
+    const tokens = { access_token: null, refresh_token: null };
+
+    function log(elId, data) {
+      document.getElementById(elId).textContent =
+        typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    }
+
+    document.getElementById("loginBtn").onclick = async () => {
+      const pubKey = document.getElementById("pubKey").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const baseUrl = document.getElementById("baseUrl").value.trim();
+      if (!pubKey || !email) return alert("Publishable key and email are required");
+
+      magic = new Magic(pubKey);
+      log("didToken", "Magic link sent — check your inbox and click it...");
+
+      try {
+        const didToken = await magic.auth.loginWithMagicLink({ email });
+        log("didToken", didToken);
+
+        const res = await fetch(`${baseUrl}/auth/login`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${didToken}` },
+        });
+        const body = await res.json();
+        log("loginResp", body);
+        if (res.ok) {
+          tokens.access_token = body.data.access_token;
+          tokens.refresh_token = body.data.refresh_token;
+        }
+      } catch (err) {
+        log("didToken", "Error: " + err.message);
+      }
+    };
+
+    document.getElementById("meBtn").onclick = async () => {
+      const baseUrl = document.getElementById("baseUrl").value.trim();
+      const res = await fetch(`${baseUrl}/users/me`, {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      });
+      log("output", await res.json());
+    };
+
+    document.getElementById("refreshBtn").onclick = async () => {
+      const baseUrl = document.getElementById("baseUrl").value.trim();
+      const res = await fetch(`${baseUrl}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: tokens.refresh_token }),
+      });
+      const body = await res.json();
+      log("output", body);
+      if (res.ok) {
+        tokens.access_token = body.data.access_token;
+        tokens.refresh_token = body.data.refresh_token;
+      }
+    };
+
+    document.getElementById("logoutBtn").onclick = async () => {
+      const baseUrl = document.getElementById("baseUrl").value.trim();
+      const res = await fetch(`${baseUrl}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: tokens.refresh_token }),
+      });
+      log("output", await res.json());
+    };
+  </script>
+</body>
+</html>
